@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Map - Peta Interaktif</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 500;
+        }
+        
+        .logo span:nth-child(1) { color: #4285F4; }
+        .logo span:nth-child(2) { color: #EA4335; }
+        .logo span:nth-child(3) { color: #FBBC05; }
+        .logo span:nth-child(4) { color: #4285F4; }
+        .logo span:nth-child(5) { color: #34A853; }
+        .logo span:nth-child(6) { color: #EA4335; }
+        
+        .search-container {
+            display: flex;
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            padding: 0 15px;
+            height: 44px;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+        
+        .search-box:hover {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            border-color: rgba(223,225,229,0);
+        }
+        
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            padding: 0 10px;
+            height: 100%;
+        }
+        
+        .search-icon {
+            color: #9aa0a6;
+        }
+        
+        .voice-search, .search-settings {
+            margin-left: 10px;
+            color: #4285F4;
+            cursor: pointer;
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1001;
+        }
+        
+        .search-result-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .search-result-item i {
+            margin-right: 10px;
+            color: #5f6368;
+        }
+        
+        .menu-icons {
+            display: flex;
+            margin-left: auto;
+        }
+        
+        .menu-icon {
+            margin-left: 20px;
+            color: #5f6368;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .user-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 15px;
+            cursor: pointer;
+            color: #5f6368;
+        }
+        
+        #map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .map-controls {
+            position: absolute;
+            right: 10px;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            z-index: 400;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+        
+        .zoom-in, .zoom-out {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            outline: none;
+            color: #5f6368;
+        }
+        
+        .zoom-in {
+            border-bottom: 1px solid #e6e6e6;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .zoom-out {
+            border-radius: 0 0 2px 2px;
+        }
+        
+        .zoom-in:hover, .zoom-out:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .my-location {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: none;
+            border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-size: 18px;
+            cursor: pointer;
+            outline: none;
+            color: #5f6368;
+        }
+        
+        .my-location:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .layer-selector {
+            position: absolute;
+            left: 10px;
+            bottom: 30px;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            padding: 10px;
+            z-index: 400;
+            display: flex;
+            align-items: center;
+        }
+        
+        .layer-selector select {
+            border: none;
+            outline: none;
+            font-size: 14px;
+            padding: 5px;
+            cursor: pointer;
+        }
+        
+        .sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 350px;
+            height: 100%;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 500;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar.active {
+            transform: translateX(0);
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            background: white;
+            border: none;
+            border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 450;
+            color: #5f6368;
+        }
+        
+        .sidebar-toggle:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid #4285F4;
+            color: #4285F4;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .directions-panel {
+            margin-top: 20px;
+        }
+        
+        .directions-panel h3 {
+            margin-bottom: 15px;
+            color: #202124;
+            font-weight: 500;
+        }
+        
+        .directions-input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .directions-input:focus {
+            border-color: #4285F4;
+            outline: none;
+        }
+        
+        .get-directions {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        
+        .get-directions:hover {
+            background-color: #3367d6;
+        }
+        
+        .location-details {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .location-details h3 {
+            margin-bottom: 15px;
+            color: #202124;
+            font-weight: 500;
+        }
+        
+        .location-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .location-info p {
+            margin-bottom: 8px;
+            color: #5f6368;
+        }
+        
+        .location-info strong {
+            color: #202124;
+        }
+        
+        footer {
+            padding: 15px 20px;
+            background-color: #f2f2f2;
+            border-top: 1px solid #e4e4e4;
+            font-size: 14px;
+            color: #5f6368;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .map-legend {
+            position: absolute;
+            right: 10px;
+            top: 80px;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            padding: 10px;
+            z-index: 400;
+            font-size: 13px;
+            color: #5f6368;
+        }
+        
+        .map-legend h4 {
+            margin-bottom: 8px;
+            color: #202124;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+        
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285F4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .place-labels {
+            color: #ffffff;
+            text-shadow: 1px 1px 3px #000000, -1px -1px 3px #000000;
+            font-weight: bold;
+            pointer-events: none;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .search-container {
+                max-width: none;
+                margin: 0 10px;
+            }
+            
+            .sidebar {
+                width: 85%;
+            }
+            
+            footer {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .map-legend {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1><span>W</span><span>o</span><span>r</span><span>l</span><span>d</span><span>M</span><span>a</span><span>p</span></h1>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-box">
+                <div class="search-icon"><i class="fas fa-search"></i></div>
+                <input type="text" placeholder="Cari lokasi atau tempat..." id="search-input">
+                <div class="voice-search"><i class="fas fa-microphone"></i></div>
+                <div class="search-settings"><i class="fas fa-cog"></i></div>
+            </div>
+            <div class="search-results" id="search-results"></div>
+        </div>
+        
+        <div class="menu-icons">
+            <div class="menu-icon"><i class="fas fa-bars"></i></div>
+            <div class="user-icon"><i class="fas fa-user"></i></div>
+        </div>
+    </header>
+    
+    <div id="map-container">
+        <div id="map"></div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Memuat peta...</p>
+        </div>
+  
+        <div class="map-controls">
+            <div class="zoom-controls">
+                <button class="zoom-in" id="zoom-in">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="zoom-out" id="zoom-out">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+            <button class="my-location" id="my-location">
+                <i class="fas fa-location-arrow"></i>
+            </button>
+        </div>
+        
+        <div class="layer-selector">
+            <select id="layer-select">
+                <option value="standard">Peta Standar</option>
+                <option value="satellite">Satelit</option>
+                <option value="terrain">Medan</option>
+            </select>
+        </div>
+        
+        <div class="map-legend">
+            <h4>Keterangan Peta</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #4285F4;"></div>
+                <span>Perairan</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #34A853;"></div>
+                <span>Hutan</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FBBC05;"></div>
+                <span>Perkotaan</span>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div>© 2025 World Map - Hak Cipta Dilindungi</div>
+        <div>Syarat Layanan | Kebijakan Privasi</div>
+    </footer>
+
+    <script>
+        // Inisialisasi peta
+        const map = L.map('map').setView([-2.5489, 118.0149], 5); // Posisi awal di Indonesia
+        
+        // Tampilkan loading
+        document.getElementById('loading').style.display = 'block';
+        
+        // Tambahkan layer peta
+        const standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+        
+        const terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+        });
+        
+        // Layer untuk nama wilayah pada mode satelit (dalam bahasa Indonesia)
+        const satelliteLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            opacity: 0.7 // Transparan agar tidak mengganggu tampilan satelit
+        });
+        
+        // Layer khusus untuk label tempat dalam bahasa Indonesia
+        const indonesianLabels = L.layerGroup();
+        
+        // Sembunyikan loading setelah peta dimuat
+        map.whenReady(function() {
+            document.getElementById('loading').style.display = 'none';
+            addIndonesianLabels();
+        });
+        
+        // Kontrol layer
+        const baseLayers = {
+            "Peta Standar": standardLayer,
+            "Satelit": satelliteLayer,
+            "Medan": terrainLayer
+        };
+        
+        // Tambahkan kontrol layer ke peta
+        L.control.layers(baseLayers).addTo(map);
+        
+        // Fungsi untuk sidebar
+        document.getElementById('sidebar-toggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+        
+        // Fungsi untuk tabs
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Hapus class active dari semua tab
+                tabs.forEach(t => t.classList.remove('active'));
+                // Tambahkan class active ke tab yang diklik
+                this.classList.add('active');
+                
+                // Sembunyikan semua konten tab
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Tampilkan konten tab yang sesuai
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+        
+        // Kontrol zoom
+        document.getElementById('zoom-in').addEventListener('click', function() {
+            map.zoomIn();
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', function() {
+            map.zoomOut();
+        });
+        
+        // Lokasi pengguna
+        document.getElementById('my-location').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                document.getElementById('loading').style.display = 'block';
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    map.setView([position.coords.latitude, position.coords.longitude], 15);
+                    
+                    // Tambahkan marker di lokasi pengguna
+                    L.marker([position.coords.latitude, position.coords.longitude])
+                        .addTo(map)
+                        .bindPopup('Lokasi Anda')
+                        .openPopup();
+                    
+                    document.getElementById('loading').style.display = 'none';
+                }, function(error) {
+                    alert('Tidak dapat mengambil lokasi: ' + error.message);
+                    document.getElementById('loading').style.display = 'none';
+                });
+            } else {
+                alert('Geolocation tidak didukung oleh browser Anda.');
+            }
+        });
+        
+        // Pencarian menggunakan Nominatim (OpenStreetMap)
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 3) {
+                document.getElementById('search-results').style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                document.getElementById('loading').style.display = 'block';
+                
+                // Gunakan Nominatim API untuk mencari lokasi
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=id`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const resultsContainer = document.getElementById('search-results');
+                        resultsContainer.innerHTML = '';
+                        
+                        if (data.length === 0) {
+                            resultsContainer.innerHTML = '<div class="search-result-item"><i class="fas fa-exclamation-circle"></i> Tidak ada hasil ditemukan</div>';
+                        } else {
+                            data.forEach(place => {
+                                const item = document.createElement('div');
+                                item.className = 'search-result-item';
+                                item.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${place.display_name}`;
+                                
+                                item.addEventListener('click', function() {
+                                    const lat = parseFloat(place.lat);
+                                    const lon = parseFloat(place.lon);
+                                    map.setView([lat, lon], 15);
+                                    
+                                    // Tambahkan marker
+                                    L.marker([lat, lon])
+                                        .addTo(map)
+                                        .bindPopup(place.display_name)
+                                        .openPopup();
+                                    
+                                    // Update informasi lokasi di sidebar
+                                    document.getElementById('location-coords').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                                    
+                                    // Coba ekstrak informasi negara dan kota
+                                    const addressParts = place.display_name.split(',');
+                                    document.getElementById('location-country').textContent = addressParts[addressParts.length - 1] || 'Tidak diketahui';
+                                    document.getElementById('location-city').textContent = addressParts[0] || 'Tidak diketahui';
+                                    document.getElementById('location-type').textContent = place.type || 'Tidak diketahui';
+                                    
+                                    // Sembunyikan hasil pencarian
+                                    resultsContainer.style.display = 'none';
+                                    document.getElementById('search-input').value = place.display_name;
+                                });
+                                
+                                resultsContainer.appendChild(item);
+                            });
+                        }
+                        
+                        resultsContainer.style.display = 'block';
+                        document.getElementById('loading').style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error('Error searching location:', error);
+                        document.getElementById('loading').style.display = 'none';
+                    });
+            }, 500);
+        });
+        
+        // Pencarian dari sidebar
+        document.getElementById('search-sidebar-btn').addEventListener('click', function() {
+            const query = document.getElementById('search-sidebar-input').value.trim();
+            if (query) {
+                document.getElementById('loading').style.display = 'block';
+                
+                // Gunakan Nominatim API untuk mencari lokasi
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=id`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            const place = data[0];
+                            const lat = parseFloat(place.lat);
+                            const lon = parseFloat(place.lon);
+                            map.setView([lat, lon], 15);
+                            
+                            // Tambahkan marker
+                            L.marker([lat, lon])
+                                .addTo(map)
+                                .bindPopup(place.display_name)
+                                .openPopup();
+                            
+                            // Update informasi lokasi di sidebar
+                            document.getElementById('location-coords').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                            
+                            // Coba ekstrak informasi negara dan kota
+                            const addressParts = place.display_name.split(',');
+                            document.getElementById('location-country').textContent = addressParts[addressParts.length - 1] || 'Tidak diketahui';
+                            document.getElementById('location-city').textContent = addressParts[0] || 'Tidak diketahui';
+                            document.getElementById('location-type').textContent = place.type || 'Tidak diketahui';
+                        } else {
+                            alert('Tidak dapat menemukan lokasi: ' + query);
+                        }
+                        
+                        document.getElementById('loading').style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error('Error searching location:', error);
+                        document.getElementById('loading').style.display = 'none';
+                    });
+            }
+        });
+        
+        // Sembunyikan hasil pencarian ketika klik di luar
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('search-results').style.display = 'none';
+            }
+        });
+        
+        // Ganti layer
+        document.getElementById('layer-select').addEventListener('change', function() {
+            const selectedLayer = this.value;
+            
+            // Hapus semua layer
+            map.removeLayer(standardLayer);
+            map.removeLayer(satelliteLayer);
+            map.removeLayer(terrainLayer);
+            map.removeLayer(satelliteLabels);
+            map.removeLayer(indonesianLabels);
+            
+            // Tambahkan layer yang dipilih
+            if (selectedLayer === 'standard') {
+                standardLayer.addTo(map);
+            } else if (selectedLayer === 'satellite') {
+                satelliteLayer.addTo(map);
+                // Tambahkan layer label untuk mode satelit
+                satelliteLabels.addTo(map);
+                indonesianLabels.addTo(map);
+            } else if (selectedLayer === 'terrain') {
+                terrainLayer.addTo(map);
+            }
+        });
+        
+        // Petunjuk arah (simulasi)
+        document.getElementById('get-directions').addEventListener('click', function() {
+            const start = document.getElementById('start-input').value;
+            const end = document.getElementById('end-input').value;
+            
+            if (start && end) {
+                document.getElementById('loading').style.display = 'block';
+                
+                // Simulasi proses pencarian rute
+                setTimeout(() => {
+                    alert('Rute dari ' + start + ' ke ' + end + ' telah ditemukan!');
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Tambahkan polyline sebagai simulasi rute
+                    const route = L.polyline([
+                        [-6.2088, 106.8456], // Jakarta
+                        [-6.9175, 107.6191]  // Bandung
+                    ], {color: 'blue'}).addTo(map);
+                    
+                    // Zoom ke rute
+                    map.fitBounds(route.getBounds());
+                }, 1500);
+            } else {
+                alert('Harap masukkan titik awal dan tujuan.');
+            }
+        });
+        
+        // Fungsi untuk menambahkan label Indonesia
+        function addIndonesianLabels() {
+            // Daftar kota besar di Indonesia dengan koordinat dan nama
+            const cities = [
+                { lat: -6.2088, lng: 106.8456, name: "Jakarta" },
+                { lat: -7.2575, lng: 112.7521, name: "Surabaya" },
+                { lat: -6.9175, lng: 107.6191, name: "Bandung" },
+                { lat: -8.4095, lng: 115.1889, name: "Bali" },
+                { lat: -0.7893, lng: 113.9213, name: "Pontianak" },
+                { lat: 1.2833, lng: 103.8333, name: "Kepulauan Riau" },
+                { lat: -3.6956, lng: 128.1814, name: "Ambon" },
+                { lat: -5.1477, lng: 119.4327, name: "Makassar" },
+                { lat: -6.1750, lng: 106.8283, name: "Tangerang" },
+                { lat: -7.7956, lng: 110.3695, name: "Yogyakarta" }
+            ];
+            
+            // Tambahkan label untuk setiap kota
+            cities.forEach(city => {
+                L.marker([city.lat, city.lng], {
+                    icon: L.divIcon({
+                        className: 'place-labels',
+                        html: city.name,
+                        iconSize: [100, 20]
+                    })
+                }).addTo(indonesianLabels);
+            });
+        }
+        
+        // Tambahkan beberapa marker contoh
+        const jakarta = L.marker([-6.2088, 106.8456]).addTo(map).bindPopup('<b>Jakarta</b><br>Ibukota Indonesia').openPopup();
+        const surabaya = L.marker([-7.2575, 112.7521]).addTo(map).bindPopup('<b>Surabaya</b><br>Kota metropolitan di Jawa Timur');
+        const bandung = L.marker([-6.9175, 107.6191]).addTo(map).bindPopup('<b>Bandung</b><br>Kota Kembang');
+        const bali = L.marker([-8.4095, 115.1889]).addTo(map).bindPopup('<b>Bali</b><br>Pulau Dewata');
+        
+        // Update informasi lokasi ketika marker diklik
+        function onMarkerClick(e) {
+            const marker = e.target;
+            const latlng = marker.getLatLng();
+            
+            document.getElementById('location-coords').textContent = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+            document.getElementById('location-country').textContent = 'Indonesia';
+            
+            // Cari nama kota berdasarkan koordinat (simulasi)
+            if (latlng.lat === -6.2088 && latlng.lng === 106.8456) {
+                document.getElementById('location-city').textContent = 'Jakarta';
+                document.getElementById('location-type').textContent = 'Ibukota';
+            } else if (latlng.lat === -7.2575 && latlng.lng === 112.7521) {
+                document.getElementById('location-city').textContent = 'Surabaya';
+                document.getElementById('location-type').textContent = 'Kota Metropolitan';
+            } else if (latlng.lat === -6.9175 && latlng.lng === 107.6191) {
+                document.getElementById('location-city').textContent = 'Bandung';
+                document.getElementById('location-type').textContent = 'Kota';
+            } else if (latlng.lat === -8.4095 && latlng.lng === 115.1889) {
+                document.getElementById('location-city').textContent = 'Bali';
+                document.getElementById('location-type').textContent = 'Pulau';
+            }
+            
+            // Buka tab informasi
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-tab="info"]').classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('info-tab').classList.add('active');
+        }
+        
+        // Tambahkan event listener ke marker
+        jakarta.on('click', onMarkerClick);
+        surabaya.on('click', onMarkerClick);
+        bandung.on('click', onMarkerClick);
+        bali.on('click', onMarkerClick);
+    </script>
+</body>
+</html>
